@@ -1,0 +1,1 @@
+export { default as component } from "../../../../src/routes/secret-admin-mgr-panel/+page.svelte";
