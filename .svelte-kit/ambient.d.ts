@@ -38,6 +38,13 @@
  * The above values will be the same _even if_ different values for `ENVIRONMENT` or `PUBLIC_BASE_URL` are set at runtime, as they are statically replaced in your code with their build time values.
  */
 declare module '$env/static/private' {
+	export const VITE_FIREBASE_API_KEY: string;
+	export const VITE_FIREBASE_AUTH_DOMAIN: string;
+	export const VITE_FIREBASE_PROJECT_ID: string;
+	export const VITE_FIREBASE_STORAGE_BUCKET: string;
+	export const VITE_FIREBASE_MESSAGING_SENDER_ID: string;
+	export const VITE_FIREBASE_APP_ID: string;
+	export const VITE_FIREBASE_MEASUREMENT_ID: string;
 	export const TERM_PROGRAM: string;
 	export const NODE: string;
 	export const INIT_CWD: string;
@@ -186,6 +193,13 @@ declare module '$env/static/public' {
  */
 declare module '$env/dynamic/private' {
 	export const env: {
+		VITE_FIREBASE_API_KEY: string;
+		VITE_FIREBASE_AUTH_DOMAIN: string;
+		VITE_FIREBASE_PROJECT_ID: string;
+		VITE_FIREBASE_STORAGE_BUCKET: string;
+		VITE_FIREBASE_MESSAGING_SENDER_ID: string;
+		VITE_FIREBASE_APP_ID: string;
+		VITE_FIREBASE_MEASUREMENT_ID: string;
 		TERM_PROGRAM: string;
 		NODE: string;
 		INIT_CWD: string;

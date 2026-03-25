@@ -3,13 +3,13 @@ import { getFirestore } from "firebase/firestore"; // Firestoreを追加
 import { getAnalytics, isSupported } from "firebase/analytics";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyARw6Gf_s56bQd6HhPnoOl6y58QTRm716s",
-  authDomain: "aqua-shitumon.firebaseapp.com",
-  projectId: "aqua-shitumon",
-  storageBucket: "aqua-shitumon.firebasestorage.app",
-  messagingSenderId: "983478802486",
-  appId: "1:983478802486:web:c48c0432a3bcfeda43a097",
-  measurementId: "G-C9BFY8TXRR"
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+  appId: import.meta.env.VITE_FIREBASE_APP_ID,
+  measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID
 };
 
 // Firebaseの初期化（二重初期化防止）
