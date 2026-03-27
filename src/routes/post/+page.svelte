@@ -36,7 +36,7 @@
       
       // 2. Clear only text for continuous submission
       text = '';
-      notice = '質問を送信しました！続けて質問できます 📨';
+      notice = '質問を送信しました！前の画面で桜が舞うよ🌸';
       
       // Clear notice after 5 seconds
       setTimeout(() => {

@@ -45,6 +45,7 @@ declare module '$env/static/private' {
 	export const VITE_FIREBASE_MESSAGING_SENDER_ID: string;
 	export const VITE_FIREBASE_APP_ID: string;
 	export const VITE_FIREBASE_MEASUREMENT_ID: string;
+	export const ANTIGRAVITY_AGENT: string;
 	export const TERM_PROGRAM: string;
 	export const NODE: string;
 	export const INIT_CWD: string;
@@ -68,6 +69,7 @@ declare module '$env/static/private' {
 	export const VSCODE_PROFILE_INITIALIZED: string;
 	export const __CF_USER_TEXT_ENCODING: string;
 	export const npm_execpath: string;
+	export const PAGER: string;
 	export const PATH: string;
 	export const npm_package_json: string;
 	export const _: string;
@@ -84,6 +86,7 @@ declare module '$env/static/private' {
 	export const npm_config_npm_version: string;
 	export const VSCODE_GIT_ASKPASS_EXTRA_ARGS: string;
 	export const XPC_FLAGS: string;
+	export const npm_package_engines_node: string;
 	export const npm_config_node_gyp: string;
 	export const npm_package_version: string;
 	export const XPC_SERVICE_NAME: string;
@@ -200,6 +203,7 @@ declare module '$env/dynamic/private' {
 		VITE_FIREBASE_MESSAGING_SENDER_ID: string;
 		VITE_FIREBASE_APP_ID: string;
 		VITE_FIREBASE_MEASUREMENT_ID: string;
+		ANTIGRAVITY_AGENT: string;
 		TERM_PROGRAM: string;
 		NODE: string;
 		INIT_CWD: string;
@@ -223,6 +227,7 @@ declare module '$env/dynamic/private' {
 		VSCODE_PROFILE_INITIALIZED: string;
 		__CF_USER_TEXT_ENCODING: string;
 		npm_execpath: string;
+		PAGER: string;
 		PATH: string;
 		npm_package_json: string;
 		_: string;
@@ -239,6 +244,7 @@ declare module '$env/dynamic/private' {
 		npm_config_npm_version: string;
 		VSCODE_GIT_ASKPASS_EXTRA_ARGS: string;
 		XPC_FLAGS: string;
+		npm_package_engines_node: string;
 		npm_config_node_gyp: string;
 		npm_package_version: string;
 		XPC_SERVICE_NAME: string;

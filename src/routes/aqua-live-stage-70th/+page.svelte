@@ -18,7 +18,7 @@
     query, 
     doc 
   } from 'firebase/firestore';
-  import { fade, scale } from 'svelte/transition';
+  import { fade, scale, fly } from 'svelte/transition';
   import { elasticOut, cubicOut } from 'svelte/easing';
 
   /** @type {HTMLCanvasElement} */
@@ -47,8 +47,9 @@
 
   /** @type {HTMLCanvasElement} */
   let bgCanvas;
-
-  /** @type {any} */
+  /** @type {HTMLCanvasElement} */
+  let fgCanvas;
+  /** @type {number} */
   let bgAnimationId;
 
   const COLORS = [
@@ -69,12 +70,40 @@
   onMount(() => {
     updateDimensions();
 
-    // === BACKGROUND NETWORK GRAPH ANIMATION ===
+    // === BACKGROUND & SAKURA ANIMATION ===
     const bgCtx = bgCanvas.getContext('2d');
     if (bgCtx) {
       /** @type {Array<{x: number, y: number, vx: number, vy: number, radius: number}>} */
       let particles = [];
       const numParticles = 80;
+
+      /** @type {Array<{x: number, y: number, r: number, vx: number, vy: number, angle: number, angleVel: number, sway: number, swayVel: number, isForeground: boolean}>} */
+      let sakuraParticles = [];
+
+      const createSakuraPétal = (isBlizzard = false) => {
+        return {
+          x: Math.random() * bgCanvas.width,
+          y: isBlizzard ? -Math.random() * 200 : -20,
+          r: 5 + Math.random() * 5,
+          vx: (Math.random() - 0.5) * 1,
+          vy: 1 + Math.random() * 2,
+          angle: Math.random() * Math.PI * 2,
+          angleVel: (Math.random() - 0.5) * 0.1,
+          sway: Math.random() * Math.PI * 2,
+          swayVel: 0.02 + Math.random() * 0.03,
+          isForeground: Math.random() < 0.2 // 20% of petals in foreground
+        };
+      };
+
+      const triggerSakuraBlizzard = (count = 150) => {
+        for (let i = 0; i < count; i++) {
+          sakuraParticles.push(createSakuraPétal(true));
+        }
+      };
+
+      // Expose to window for testing or internal use if needed, but we'll call it within scope
+      // @ts-ignore
+      window.triggerSakura = triggerSakuraBlizzard;
 
       const initParticles = () => {
         particles = [];
@@ -92,6 +121,8 @@
       const resizeBg = () => {
         bgCanvas.width = window.innerWidth;
         bgCanvas.height = window.innerHeight;
+        fgCanvas.width = window.innerWidth;
+        fgCanvas.height = window.innerHeight;
         initParticles();
       };
       window.addEventListener('resize', resizeBg);
@@ -99,8 +130,10 @@
 
       const drawBg = () => {
         bgCtx.clearRect(0, 0, bgCanvas.width, bgCanvas.height);
+        const fgCtx = fgCanvas.getContext('2d');
+        if (fgCtx) fgCtx.clearRect(0, 0, fgCanvas.width, fgCanvas.height);
         
-        bgCtx.fillStyle = 'rgba(212, 175, 55, 0.6)'; // Gold particles
+        bgCtx.fillStyle = 'rgba(247, 231, 201, 0.5)'; // Champagne Gold particles
         particles.forEach(p => {
           p.x += p.vx;
           p.y += p.vy;
@@ -121,8 +154,8 @@
             const dist = Math.sqrt(dx * dx + dy * dy);
             
             if (dist < 150) {
-              // Gold edges
-              bgCtx.strokeStyle = `rgba(212, 175, 55, ${0.3 * (1 - dist/150)})`;
+              // Champagne Gold edges
+              bgCtx.strokeStyle = `rgba(247, 231, 201, ${0.3 * (1 - dist/150)})`;
               bgCtx.beginPath();
               bgCtx.moveTo(particles[i].x, particles[i].y);
               bgCtx.lineTo(particles[j].x, particles[j].y);
@@ -130,6 +163,36 @@
             }
           }
         }
+        // --- Draw Sakura ---
+        bgCtx.fillStyle = 'rgba(255, 183, 197, 0.8)'; // Pink Sakura
+        sakuraParticles.forEach((p, index) => {
+          p.y += p.vy;
+          p.x += p.vx + Math.sin(p.sway) * 0.5;
+          p.sway += p.swayVel;
+          p.angle += p.angleVel;
+
+          // Drawing a simple petal (ellipse)
+          const targetCtx = p.isForeground && fgCtx ? fgCtx : bgCtx;
+          targetCtx.save();
+          targetCtx.translate(p.x, p.y);
+          targetCtx.rotate(p.angle);
+          targetCtx.beginPath();
+          targetCtx.ellipse(0, 0, p.r, p.r / 2, 0, 0, Math.PI * 2);
+          targetCtx.fillStyle = p.isForeground ? 'rgba(255, 192, 203, 0.9)' : 'rgba(255, 183, 197, 0.8)';
+          targetCtx.fill();
+          targetCtx.restore();
+
+          // Remove if off screen
+          if (p.y > bgCanvas.height + 20) {
+            sakuraParticles.splice(index, 1);
+          }
+        });
+
+        // Maintain a few idle petals
+        if (sakuraParticles.length < 5 && Math.random() < 0.05) {
+          sakuraParticles.push(createSakuraPétal());
+        }
+
         bgAnimationId = requestAnimationFrame(drawBg);
       };
       drawBg();
@@ -238,7 +301,11 @@
 
     unsubscribe = onSnapshot(query(collection(db, 'questions')), (snapshot) => {
       snapshot.docChanges().forEach((change) => {
-        if (change.type === 'added') addCapsule(change.doc.id);
+        if (change.type === 'added') {
+          addCapsule(change.doc.id);
+          // @ts-ignore
+          if (window.triggerSakura) window.triggerSakura(150);
+        }
         else if (change.type === 'removed') removePhysicalCapsule(change.doc.id);
       });
     });
@@ -406,6 +473,8 @@
     setTimeout(() => {
       showOverlay = true;
       isBreaking = false;
+      // @ts-ignore
+      if (window.triggerSakura) window.triggerSakura(250); // Massive celebration!
     }, 400);
   }
 
@@ -424,6 +493,7 @@
 <main class="page">
   <canvas bind:this={bgCanvas} class="bg-canvas"></canvas>
   <canvas bind:this={canvas} class="physics-canvas"></canvas>
+  <canvas bind:this={fgCanvas} class="fg-canvas"></canvas>
 
   <div class="header" class:dim={showOverlay}>
     <h1 class="stage-title">ガイダンス質問</h1>
@@ -431,8 +501,8 @@
   </div>
 
   {#if showOverlay && currentDisplay}
-    <div class="display-overlay" in:fade>
-      <div class="question-container" in:scale={{ duration: 700, easing: elasticOut, start: 0.8 }}>
+    <div class="display-overlay" transition:fade={{ duration: 400 }}>
+      <div class="question-container" in:fly={{ y: 50, duration: 800, easing: cubicOut }}>
         <div class="on-air">NOW PROJECTING</div>
         <p class="text">{currentDisplay.text}</p>
         <div class="meta">
@@ -456,7 +526,7 @@
   :global(body) {
     margin: 0;
     overflow: hidden;
-    background: radial-gradient(circle at 50% 50%, #0b132b 0%, #050914 100%);
+    background: linear-gradient(to bottom, #6495ed 0%, #e0ffff 100%);
     font-family: 'Noto Sans JP', sans-serif;
   }
 
@@ -484,6 +554,16 @@
     z-index: 10;
   }
 
+  .fg-canvas {
+    position: absolute;
+    inset: 0;
+    width: 100vw;
+    height: 100vh;
+    display: block;
+    z-index: 200; /* Above overlay */
+    pointer-events: none;
+  }
+
   .header {
     position: absolute;
     top: 60px;
@@ -507,31 +587,27 @@
     margin: 0;
     line-height: 1;
     text-transform: uppercase;
-    background: linear-gradient(to bottom, #fff 30%, #e2e8f0 100%);
-    -webkit-background-clip: text;
-    background-clip: text;
-    -webkit-text-fill-color: transparent;
-    filter: drop-shadow(0 0 20px rgba(212, 175, 55, 0.8)) drop-shadow(0 0 40px rgba(212, 175, 55, 0.4));
+    filter: drop-shadow(0 0 15px rgba(255, 255, 255, 0.8)) drop-shadow(0 0 8px rgba(255, 192, 203, 0.4));
   }
 
   .subtitle {
-    color: #d4af37;
+    color: white;
     font-family: 'Oswald', sans-serif;
     font-size: 1.5rem;
     font-weight: 700;
     letter-spacing: 0.5em;
     margin-top: 1rem;
     text-transform: uppercase;
-    opacity: 0.9;
-    text-shadow: 0 0 10px rgba(212, 175, 55, 0.6);
+    opacity: 0.95;
+    text-shadow: 0 0 12px rgba(255, 255, 255, 0.8);
   }
 
   .display-overlay {
     position: absolute;
     inset: 0;
     z-index: 100;
-    background: rgba(2, 6, 23, 0.6);
-    backdrop-filter: blur(40px) saturate(150%);
+    background: rgba(2, 6, 23, 0.4);
+    backdrop-filter: blur(80px) saturate(160%);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -539,40 +615,49 @@
   }
 
   .question-container {
-    background: linear-gradient(135deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.01) 100%);
-    border: 1px solid rgba(255, 255, 255, 0.15);
+    background: linear-gradient(135deg, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0.02) 100%);
+    border-top: 1px solid rgba(255, 255, 255, 0.5);
+    border-bottom: 1px solid rgba(100, 149, 237, 0.3);
+    border-left: 1px solid rgba(255, 255, 255, 0.1);
+    border-right: 1px solid rgba(255, 255, 255, 0.1);
     padding: 6rem;
-    border-radius: 5rem;
+    border-radius: 10rem;
     max-width: 1200px;
     width: 100%;
     text-align: center;
-    box-shadow: 0 100px 150px -50px rgba(0,0,0,0.8), 
-                inset 0 0 50px rgba(99, 102, 241, 0.1);
+    box-shadow: 0 50px 100px -20px rgba(10, 20, 50, 0.4), 
+                0 0 40px rgba(255, 192, 203, 0.2),
+                inset 0 0 50px rgba(255, 255, 255, 0.05);
   }
 
   .on-air {
     display: inline-block;
-    background: #6366f1;
+    background: #ff69b4; /* Hot Pink */
     color: white;
-    padding: 0.6rem 2rem;
-    border-radius: 1rem;
+    padding: 0.6rem 2.5rem;
+    border-radius: 1.2rem;
     font-family: 'Oswald', sans-serif;
     font-weight: 700;
     font-size: 1.2rem;
     margin-bottom: 4rem;
-    letter-spacing: 0.2em;
-    box-shadow: 0 0 40px rgba(99, 102, 241, 0.5);
+    letter-spacing: 0.25em;
+    box-shadow: 0 0 30px rgba(255, 105, 180, 0.4);
+    border: 1px solid rgba(255, 255, 255, 0.3);
   }
 
   .text {
-    color: white;
+    color: #f8f9fa; /* Matte Pearl White */
     font-family: 'Noto Sans JP', sans-serif;
-    font-size: 5.5rem;
+    font-size: 6.6rem; /* 1.2x of 5.5rem */
     font-weight: 900;
     line-height: 1.1;
     margin: 0 0 4rem 0;
-    text-shadow: 0 0 20px rgba(212, 175, 55, 0.6), 0 5px 15px rgba(0,0,0,0.8);
+    text-shadow: 
+      0 0 20px rgba(255, 255, 255, 0.8), 
+      0 0 8px rgba(255, 182, 193, 0.5),
+      0 10px 30px rgba(0,0,0,0.3);
     word-break: break-all;
+    transform: scale(1.05);
   }
 
   .meta {
@@ -583,17 +668,17 @@
   }
 
   .user-label {
-    color: #475569;
+    color: #94a3b8; /* Silver */
     font-family: 'Oswald', sans-serif;
     font-weight: 700;
-    font-size: 1rem;
+    font-size: 0.9rem;
     letter-spacing: 0.3em;
   }
 
   .nickname {
-    color: #6366f1;
+    color: #cbd5e1; /* Thin Silver */
     font-family: 'Montserrat', sans-serif;
-    font-size: 2.5rem;
+    font-size: 2rem;
     font-weight: 900;
     letter-spacing: 0.05em;
   }
@@ -603,24 +688,24 @@
     bottom: 60px;
     width: 100%;
     text-align: center;
-    z-index: 20;
-    pointer-events: none;
+    z-index: 5;
   }
 
   .status {
-    color: #334155;
+    color: white;
     font-family: 'Oswald', sans-serif;
-    font-weight: 700;
-    font-size: 1rem;
-    letter-spacing: 0.4em;
+    font-size: 0.8rem;
+    letter-spacing: 0.5em;
+    opacity: 0.3;
   }
 
   .pulse {
-    animation: blink 0.8s infinite alternate;
+    animation: pulse 2s infinite;
   }
 
-  @keyframes blink {
-    from { opacity: 0.1; }
-    to { opacity: 0.6; }
+  @keyframes pulse {
+    0% { opacity: 0.2; }
+    50% { opacity: 0.5; }
+    100% { opacity: 0.2; }
   }
 </style>
