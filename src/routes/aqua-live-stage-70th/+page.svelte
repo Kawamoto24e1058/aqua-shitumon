@@ -301,12 +301,31 @@
 
     unsubscribe = onSnapshot(query(collection(db, 'questions')), (snapshot) => {
       snapshot.docChanges().forEach((change) => {
+        const data = change.doc.data();
+        const isPending = data.status === 'pending' || !data.status;
+
         if (change.type === 'added') {
-          addCapsule(change.doc.id);
-          // @ts-ignore
-          if (window.triggerSakura) window.triggerSakura(150);
+          // Only spawn capsule if it's unselected (pending)
+          if (isPending) {
+            addCapsule(change.doc.id);
+            // Celebration for new submissions
+            // @ts-ignore
+            if (window.triggerSakura) window.triggerSakura(150);
+          }
         }
-        else if (change.type === 'removed') removePhysicalCapsule(change.doc.id);
+        else if (change.type === 'modified') {
+          // If a capsule becomes non-pending (e.g. picked or deleted)
+          if (!isPending) {
+            // Only remove if it's not the one currently being projected (to avoid interrupting animation)
+            if (!currentDisplay || currentDisplay.id !== change.doc.id) {
+              removePhysicalCapsule(change.doc.id);
+            }
+          }
+        }
+        else if (change.type === 'removed') {
+          // Physical removal if document is deleted
+          removePhysicalCapsule(change.doc.id);
+        }
       });
     });
 
