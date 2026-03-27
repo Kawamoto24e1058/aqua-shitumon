@@ -2,14 +2,24 @@
   import { db } from '$lib/firebase';
   import { collection, addDoc, serverTimestamp, terminate } from 'firebase/firestore';
   import { fade } from 'svelte/transition';
+  import { onMount } from 'svelte';
 
+  let studentId = '';
   let nickname = '';
   let text = '';
   let isSending = false;
   let notice = '';
   let error = '';
 
+  const studentIdRegex = /^[a-zA-Z0-9]+$/;
+
+  onMount(() => {
+    studentId = localStorage.getItem('student_id') || '';
+    nickname = localStorage.getItem('nickname') || '';
+  });
+
   function resetForm() {
+    studentId = '';
     nickname = '';
     text = '';
     isSending = false;
@@ -17,8 +27,13 @@
   }
 
   async function handleSubmit() {
-    if (!nickname || !text) {
+    if (!studentId || !nickname || !text) {
       error = 'すべて入力してください';
+      return;
+    }
+
+    if (!studentIdRegex.test(studentId)) {
+      error = '学籍番号は英数字のみで入力してください';
       return;
     }
     
@@ -29,14 +44,20 @@
     try {
       // 1. Save to Firestore
       await addDoc(collection(db, 'questions'), {
+        student_id: studentId,
         nickname,
         text,
+        status: 'pending',
         timestamp: serverTimestamp()
       });
       
       // 2. Clear only text for continuous submission
       text = '';
       notice = '質問を送信しました！前の画面で桜が舞うよ🌸';
+
+      // 3. Save to localStorage
+      localStorage.setItem('student_id', studentId);
+      localStorage.setItem('nickname', nickname);
       
       // Clear notice after 5 seconds
       setTimeout(() => {
@@ -80,8 +101,23 @@
 
       <form on:submit|preventDefault={handleSubmit} class="space-y-6">
         <div>
+          <label for="studentId" class="block text-xs font-bold text-blue-800 uppercase tracking-widest mb-2 ml-1">
+            学籍番号 <span class="text-red-500 font-black">*</span>
+          </label>
+          <input
+            id="studentId"
+            type="text"
+            bind:value={studentId}
+            placeholder="例：26E1234（半角入力）"
+            class="w-full px-6 py-4 bg-white/50 border-2 border-blue-100 rounded-2xl focus:border-blue-400 focus:ring-0 outline-none transition-all placeholder:text-blue-200 text-blue-900 font-medium uppercase"
+            disabled={isSending}
+            required
+          />
+        </div>
+
+        <div>
           <label for="nickname" class="block text-xs font-bold text-blue-800 uppercase tracking-widest mb-2 ml-1">
-            ニックネーム
+            ニックネーム <span class="text-red-500 font-black">*</span>
           </label>
           <input
             id="nickname"
@@ -96,7 +132,7 @@
 
         <div>
           <label for="text" class="block text-xs font-bold text-blue-800 uppercase tracking-widest mb-2 ml-1">
-            質問内容
+            質問内容 <span class="text-red-500 font-black">*</span>
           </label>
           <textarea
             id="text"
@@ -112,7 +148,7 @@
         <button
           type="submit"
           class="w-full bg-blue-600 hover:bg-blue-700 text-white font-black py-5 rounded-3xl shadow-xl shadow-blue-200 transition-all active:scale-95 disabled:opacity-50 disabled:active:scale-100 text-lg flex items-center justify-center space-x-2"
-          disabled={isSending}
+          disabled={isSending || !studentId || !nickname || !text}
         >
           {#if isSending}
             <span>送信中...</span>
